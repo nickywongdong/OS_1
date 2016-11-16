@@ -17,6 +17,22 @@ typedef int bool;
 
 void parseInput(char *input){
   printf("input: %s\n", input);
+  int i, x=0;
+
+  char tokens[256][256];
+  for(i=0; i<256; i++)
+    memset(tokens[i], '\0', 256);
+
+  //splits string into tokens, separated by whitespace
+  snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(input," ,.-"));
+  //strcpy(tokens[x], strtok (input," ,.-"));
+  while (tokens[x] != NULL)
+  {
+    printf ("%s\n",tokens[x]);
+    //strcpy(tokens[x], strtok (input," ,.-"));
+    snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(input," ,.-"));
+    x++;
+  }
 }
 
 void smallsh(){
