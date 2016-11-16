@@ -26,12 +26,12 @@ void parseInput(char *input){
   //splits string into tokens, separated by whitespace
   snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(input," ,.-"));
   //strcpy(tokens[x], strtok (input," ,.-"));
-  while (tokens[x] != NULL)
+  while (strcmp(tokens[x], "(null)") != 0)
   {
-    printf ("%s\n",tokens[x]);
+    printf ("%s\n", tokens[x]);
     //strcpy(tokens[x], strtok (input," ,.-"));
-    snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(input," ,.-"));
     x++;
+    snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(NULL," ,.-"));
   }
 }
 
