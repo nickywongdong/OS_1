@@ -10,20 +10,26 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef int bool;
+#define true 1
+#define false 0
 
-void parseInput(char input[2048]){
-  
 
+void parseInput(char *input){
+  printf("input: %s\n", input);
 }
 
 void smallsh(){
   int status=-5;
-  char input[2048];
+  size_t bufsize = 0;
+  char *input = NULL;
+
   while(status){
-    memset(input, '\0', 2048);
-    getline(&input, stdin);
+    //memset(input, '\0', 2048);
+    printf(": ");
+    getline(&input, &bufsize, stdin);
     parseInput(input);
-    execCommand();
+    //execCommand();
   }
 
 
