@@ -22,9 +22,9 @@ void execExit(){
   status=0;
 }
 
-void execCd(char path[256]){
+void execCd(char args[512][256]){
   //printf("IN CD\n");
-  chdir(path);
+  chdir(args[0]);
 }
 
 void execStatus(){
@@ -33,7 +33,7 @@ void execStatus(){
 }
 
 //fork
-void execLs(){
+void execLs(char arguments[512][256]){
   char *args[2];
 
     args[0] = "/bin/ls";        // first arg is the full path to the executable
@@ -44,7 +44,7 @@ void execLs(){
         //wait( &status );        // parent: wait for the child (not really necessary)
 }
 
-void execCat(char tokens[256][256]){
+void execCat(char args[512][256]){
   //if(fork()==0) execvp(tokens[0], tokens);
   //else{
     //printf("parent will wait\n";);
@@ -53,20 +53,20 @@ void execCat(char tokens[256][256]){
 }
 
 //will select the command to exec
-void execCommand(char tokens[256][256], int numTokens){
+void execCommand(char *cmd, char args[512][256]){
   int i;
   /*testing tokens (keep for a while)
   for(i=0; i<10; i++){
     printf("token %d: %s\n", i, tokens[i]);
   }*/
-  if(strcmp(tokens[0], "exit")==0)  execExit();
-  else if(strcmp(tokens[0], "cd")==0)  execCd(tokens[i]); //assuming the path will be second token
-  else if(strcmp(tokens[0], "status")==0)  execStatus();
-  else if(strcmp(tokens[0], "ls")==0) execLs();
-  else if(strcmp(tokens[0], "cat")==0) execCat(tokens);
+  if(strcmp(cmd, "exit")==0)  execExit();
+  else if(strcmp(cmd, "cd")==0)  execCd(args); //assuming the path will be second token
+  else if(strcmp(cmd, "status")==0)  execStatus();
+  else if(strcmp(cmd, "ls")==0) execLs(args);
+  else if(strcmp(cmd, "cat")==0) execCat(args);
 }
 //separates the input string into *tokens by whitespace
-int parseInput(char *input, char tokens[256][256], char *cmd, char **args){
+int parseInput(char *input, char tokens[256][256], char *cmd, char args[512][256]){
   int i, x=0;
   for(i=0; i<256; i++)  //safetly add null terminators
     memset(tokens[i], '\0', 256);
@@ -80,14 +80,8 @@ int parseInput(char *input, char tokens[256][256], char *cmd, char **args){
   //testing
   //printf("command: %s\n", cmd);
 
-  args=malloc(sizeof(char**)*512);  //max of 512 args
-  *args=malloc(sizeof(char*)*256); //have max arg length 256
-  printf("size of args: %lu\n", sizeof(args));
-  for(i=0; i<sizeof(args); i++){
-    printf("length of args: %lu\n", sizeof(args[i]));
-  }
 
-  //for(i=0; i<sizeof(args); i++)  memset(args[i], '\0', sizeof(args[i]));
+  for(i=0; i<512; i++)  memset(args[i], '\0', 256);
   i=0;
   while (strcmp(tokens[x], "(null)") != 0)  //when copying strings, it will copy (null)
   {
@@ -97,10 +91,10 @@ int parseInput(char *input, char tokens[256][256], char *cmd, char **args){
     i++;
   }
 
-  //testing:
-  for(i=0; i<sizeof(args); i++){
+  /*testing:
+  for(i=0; strcmp(args[i], "(null)")!=0; i++){
     printf("args: %s\n", args[i]);
-  }
+  }*/
   return x;
 }
 
@@ -111,7 +105,7 @@ void smallsh(){
   char *input = NULL;
   char tokens[256][256];
   char *cmd;
-  char **args;
+  char args[512][256];  //max 512 args, 256 in length
 
   while(status){
     //testing
@@ -119,7 +113,7 @@ void smallsh(){
     printf(": ");
     getline(&input, &bufsize, stdin);   //automatically allocs mem for input
     numTokens=parseInput(input, tokens, cmd, args);
-    execCommand(tokens, numTokens);
+    execCommand(cmd, args);
   }
 
 
