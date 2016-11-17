@@ -12,6 +12,7 @@
 #include <string.h>
 
 int status=-5;    //overall status    (can change from global later if we run into problems)
+int displayedStatus=0;  //status that we print out (different from the status due to while loop in main)
 
 
 //simply exits the shell, will set status to 0 (breaking out of loop)
@@ -27,8 +28,8 @@ void execCd(char *cmd){
 
 //will display status of prev commands
 void execStatus(){
-  printf("Status: %d\n", status);
-  status=0;
+  printf("Status: %d\n", displayedStatus);
+  displayedStatus=0;
 }
 
 //will execute all other commands based off PATH variable: /usr/built-in
@@ -50,7 +51,7 @@ void execOther(char *line, char *cmd, char *args[]){
     status=-1;
   }
   else{               //it's the parent
-    waitpid(spawnpid, &status, 0);     //parent wait for child to terminate
+    waitpid(spawnpid, &displayedStatus, 0);     //parent wait for child to terminate
   }
 }
 //will execute the commands based off of cmd string (checks for built-in commands first)
@@ -103,9 +104,12 @@ void parseInput(char **line, char **cmd, char *args[]){
   //memset(args[i-1], '\0', 256);   //remove that (null) arg
   //printf("memset\n");
   for(i=x; i<512; i++){
-    args[x] = NULL;
+    args[i] = NULL;
     //printf("arg %d: %s\n", i, args[i]);
   }
+  //for(i=0; i<512; i++){
+   //   if(args[i]!=NULL) printf("arg %d: %s\n", i, args[i]);
+    //}
 }
 
 
@@ -130,13 +134,16 @@ void smallsh(){
     fflush(stdout);
     readInput(&line);
     //testing
+    //printf("status: %d\n", status);
     //printf("line: %s\n", line);
     //for(i=0; i<512; i++)
     //  printf("arg %d: %s\n", i, args[i]);
     parseInput(&line, &cmd, args);
-    //for(i=0; i<512; i++)
-    //  printf("arg %d: %s\n", i, args[i]);
+    //for(i=0; i<512; i++){
+    //  if(args[i]!=NULL) printf("arg %d: %s\n", i, args[i]);
+    //}
     execCommands(line, cmd, args);
+    //printf("status: %d\n", status);
   }
 
 
