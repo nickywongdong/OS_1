@@ -6,6 +6,9 @@
 
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -57,21 +60,30 @@ void execStatus(){
 
 //will execute all other commands based off PATH variable: /usr/built-in
 void execOther(char *line, char *cmd, char *args[], int x){
-  //testing
   int i;
-  //for(i=0; i<512; i++)
-  //  printf("arg %d: %s\n", i, args[i]);
 
   pid_t spawnpid = fork();
   if(spawnpid==0){  //child
+    int fd;
+    if(isOutput){
+      printf("redirecting to read\n");
+      fd=open(outFile, O_RDONLY);   //open for reading
+      dup2(1, fd);    //redirect from stdout (1) to filedecriptor
+    }
+    if(isInput){
+      printf("redirecting to write\n");
+      fd=open(inFile, O_WRONLY);    //open for writing
+      dup2(1, fd);    //redirect from stdout to filedecriptor
+      printf("error: %d\n", errno);
+    }
     //status=0;
     //testing
     //printf("CMD: %s\n", cmd);
     for(i=x; i<512; i++){
-    //free(args[i]);
-    args[i] = NULL;
-    //printf("arg %d: %s\n", i, args[i]);
-  }
+      //free(args[i]);
+      args[i] = NULL;
+      //printf("arg %d: %s\n", i, args[i]);
+    }
     execvp(cmd, args);    //simply run the cmd with the arguments ***consider redirection later
   }
   else if(spawnpid<0){    //ran into an error
