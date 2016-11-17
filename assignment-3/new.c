@@ -66,7 +66,7 @@ void execCommands(char *line, char*cmd, char*args[]){
 void parseInput(char **line, char **cmd, char *args[]){
   int i, x=0;
   memset(*cmd, '\0', 256);    //make sure cmd is properly init, or we reset cmd from last time
-  //memset(*args, '\0', 512);
+  //memset(args, '\0', 512);
   //for(i=0; i<512; i++)  memset(args[i], '\0', 256); //same for arguments
   //for(i=0; i<5; i++)  args[i] = NULL;
 
@@ -116,7 +116,7 @@ void parseInput(char **line, char **cmd, char *args[]){
 //simply reads in input as a string, and stores in line
 void readInput(char **line){
   size_t bufsize = 0;
-  memset(*line, '\0', 2048);
+  memset(*line, '\0', 2048);    //reset line
   getline(&*line, &bufsize, stdin);
   fflush(stdin);
 
@@ -145,6 +145,10 @@ void smallsh(){
     execCommands(line, cmd, args);
     //printf("status: %d\n", status);
   }
+
+  free(line);
+  free(cmd);
+  for(i=0; i<512; i++)  free(args[i]);
 
 
 }

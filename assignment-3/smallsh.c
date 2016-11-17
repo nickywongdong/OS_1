@@ -11,145 +11,181 @@
 #include <stdio.h>
 #include <string.h>
 
-typedef int bool;
-#define true 1
-#define false 0
+int status=-5;    //overall status    (can change from global later if we run into problems)
+int displayedStatus=0;  //status that we print out (different from the status due to while loop in main)
 
-int status=-5;
 
+//simply exits the shell, will set status to 0 (breaking out of loop)
 void execExit(){
-  //printf("In Exit\n");
   status=0;
 }
 
-void execCd(char *args[512]){
-  //printf("IN CD\n");
-  chdir(args[0]);
-}
-
-void execStatus(){
-  printf("Status: %d\n", status);
-  //printf("In STATUS\n");
-}
-
-//fork
-void execLs(char *tokens[256], char *arguments[512]){
-  pid_t spawnpid = -5;
-  char *args[2];
-
-    args[0] = "ls";        // first arg is the full path to the executable
-    args[1] = NULL;             // list of args must be NULL terminated
-    spawnpid=fork();
-    if ( spawnpid == 0 ){
-        execvp( args[0], args ); // child: call execv with the path and the args
-      }
-
-    else  {
-      return;
-      //wait( &status );        // parent: wait for the child (not really necessary)
-    }
-}
-
-void execCat(char *tokens[256], char *arguments[512]){
-  char *args[2];
-
-  args[0] = "cat";        // first arg is the full path to the executable
-  args[1] = NULL;             // list of args must be NULL terminated
-
-  if(fork()==0){
-      execvp(args[0], tokens);
+//runs cd build in command
+void execCd(char *cmd, char*args[]){
+  char *home = getenv("HOME");
+  //printf("in cd\n");
+  //printf("args at 1: %s\n", args[1]);
+  if(!strcmp(args[1], "(null)")){
+    //printf("changing directory to home\n");
+    chdir(home);
   }
-  else  wait(&status);
-}
-
-//will select the command to exec
-void execCommand(char *tokens[256], char *cmd, char *args[512]){
-  int i;
-  /*testing tokens (keep for a while)
-  for(i=0; i<10; i++){
-    printf("token %d: %s\n", i, tokens[i]);
-  }*/
+  else if(!chdir(args[1])){
+    //printf("error in cd\n");
+  }
   //testing
-  printf("The command: %s\n", cmd);
+  //printf("cmd: %s\n", cmd);
+  //chdir(cmd);
+  //status=0;
+}
+
+//will display status of prev commands
+void execStatus(){
+  printf("Status: %d\n", displayedStatus);
+  displayedStatus=0;
+}
+
+//will execute all other commands based off PATH variable: /usr/built-in
+void execOther(char *line, char *cmd, char *args[], int x){
+  //testing
+  int i;
+  //for(i=0; i<512; i++)
+  //  printf("arg %d: %s\n", i, args[i]);
+
+  pid_t spawnpid = fork();
+  if(spawnpid==0){  //child
+    //status=0;
+    //testing
+    //printf("CMD: %s\n", cmd);
+    for(i=x; i<512; i++){
+    //free(args[i]);
+    args[i] = NULL;
+    //printf("arg %d: %s\n", i, args[i]);
+  }
+    execvp(cmd, args);    //simply run the cmd with the arguments ***consider redirection later
+  }
+  else if(spawnpid<0){    //ran into an error
+    printf("ERROR\n");
+    status=-1;
+  }
+  else{               //it's the parent
+    waitpid(spawnpid, &displayedStatus, 0);     //parent wait for child to terminate
+  }
+}
+//will execute the commands based off of cmd string (checks for built-in commands first)
+void execCommands(char *line, char*cmd, char*args[], int x){
+  //first we check for built-in commands
   if(strcmp(cmd, "exit")==0)  execExit();
-  else if(strcmp(cmd, "cd")==0)  execCd(args); //assuming the path will be second token
-  else if(strcmp(cmd, "status")==0)  execStatus();
-  else if(strcmp(cmd, "ls")==0) execLs(tokens, args);
-  else if(strcmp(cmd, "cat")==0) execCat(tokens, args);
-  //else  printf("command not found\n");
+  else if(strcmp(cmd, "cd")==0) execCd(cmd, args);
+  else if(strcmp(cmd, "status")==0) execStatus();
+  else  execOther(line, cmd, args, x);
 }
-
-
-//separates the input string into *tokens by whitespace
-char *parseInput(char *input, char *tokens[256], char *args[512]){
-  char *cmd;
+//splits the input string by spaces, and stops at the newline
+int parseInput(char **line, char **cmd, char *args[]){
   int i, x=0;
-  for(i=0; i<256; i++){
-    tokens[i]=malloc(sizeof(char)*256);
-  }
-  for(i=0; i<512; i++){  //safetly add null terminators
-    args[i]=malloc(sizeof(char)*256);
-    memset(args[i], '\0', 256);
-  }
+  memset(*cmd, '\0', 256);    //make sure cmd is properly init, or we reset cmd from last time
+  //memset(args, '\0', 512);
+  //for(i=0; i<512; i++)  memset(args[i], '\0', 256); //same for arguments
+  //for(i=0; i<5; i++)  args[i] = NULL;
 
-  for(i=0; i<256; i++)  //safetly add null terminators
-    memset(tokens[i], '\0', 256);
-  //splits string into tokens, separated by whitespace
-  snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(input,"\n ,-"));
-
-  //store the first token as commands
-  cmd=malloc(sizeof(char)*sizeof(tokens[0]));
-  memset(cmd, '\0', sizeof(tokens[0]));
-  snprintf(cmd, sizeof(tokens[0]), "%s", tokens[0]);
-
-
-
-  for(i=0; i<512; i++)  memset(args[i], '\0', 256);
-  i=0;
-  while (strcmp(tokens[x], "(null)") != 0)  //when copying strings, it will copy (null)
-  {
-    x++;
-    snprintf(tokens[x], sizeof(tokens[x]), "%s", strtok(NULL,"\n ,-"));
-    snprintf(args[i], sizeof(tokens[x]), "%s", tokens[x]);
-    i++;
-  }
-
-  /*testing:
-  for(i=0; strcmp(args[i], "(null)")!=0; i++){
-    printf("args: %s\n", args[i]);
+  //testing
+  //int j;
+  /*for(i=0; i<512; i++){
+    printf("arg %d: %s\n", i, args[i]);
+    //if(args[i][0]!='\0')  printf("arg %d: %s\n", i, args[i]);
+    //else  printf("arg %d: %d\n", i, 0)
+    //for(j=0; j<256; j++){
+    //}
   }*/
-  return cmd;
+
+  //testing
+  //printf("Line: %s\n", *line);
+
+  //store line as arguments
+  snprintf(args[0], sizeof(args[0]), "%s", strtok(*line,"\n ,-"));    //initial strtok
+  while(strcmp(args[x], "(null)")!=0){  //will copy in string "(null)" (dont know why)
+    x++;
+    snprintf(args[x], sizeof(args[x]), "%s", strtok(NULL,"\n ,-"));   //every additional strtok (null, we already opened)
+  }
+  //store first arg as cmd
+  strcpy(*cmd, args[0]);
+  //testing
+  //printf("cmd: %s\n", *cmd);
+  //printf("X: %d\n", x);
+  /*for(i=0; args[i][0]!='\0'; i++){
+    printf("Arg %d: %s\n", i, args[i]);
+  }
+
+  for(i=0; args[i][0]!='\0'; i++){
+    printf("Arg %d: %s\n", i, args[i]);
+  }*/
+  //memset(args[i-1], '\0', 256);   //remove that (null) arg
+  //printf("memset\n");
+  //this will set the args after last one to NULL so that execvp knows when to stop
+  int temp=x;
+  //for(i=x; i<512; i++){
+  //  free(args[i]);
+  //  args[i] = NULL;
+    //printf("arg %d: %s\n", i, args[i]);
+  //}
+  //for(i=0; i<512; i++){
+   //   if(args[i]!=NULL) printf("arg %d: %s\n", i, args[i]);
+    //}
+
+  //we then return that initial x value so we can reallocate memory for what we free'ed
+  return temp;
 }
 
-//main shell loop, will return to main upon any error or exit()
-void smallsh(){
-  //int numTokens;
+
+//simply reads in input as a string, and stores in line
+void readInput(char **line){
   size_t bufsize = 0;
-  char *input = NULL;
-  char *tokens[256];
-  char *cmd;
-  char *args[512];  //max 512 args, 256 in length
+  memset(*line, '\0', 2048);    //reset line
+  getline(&*line, &bufsize, stdin);
+  fflush(stdin);
+
+  //testing
+  //printf("input: %s\n", line);
+}
+void smallsh(){
+  int i, x;
+  char *line=malloc(sizeof(char)*2048), *cmd=malloc(sizeof(char)*256);
+  char *args[512];
+  for(i=0; i<512; i++)  args[i]=malloc(sizeof(char)*256);
 
   while(status){
-    //testing
-    //printf("status: %d\n", status);
     printf(": ");
     fflush(stdout);
-    fflush(stdin);
-    getline(&input, bufsize, stdin);   //automatically allocs mem for input
-    cmd=parseInput(input, tokens, args);  //or pass cmd by reference
-    execCommand(tokens, cmd, args);
+    readInput(&line);
+    //testing
+    //printf("status: %d\n", status);
+    //printf("line: %s\n", line);
+    //for(i=0; i<512; i++)
+    //  printf("arg %d: %s\n", i, args[i]);
+    x=parseInput(&line, &cmd, args);
+    //for(i=0; i<512; i++){
+    //  if(args[i]!=NULL) printf("arg %d: %s\n", i, args[i]);
+    //}
+    execCommands(line, cmd, args, x);
+    //testing
+    //printf("Value of x: %d\n", x);
+    for(i=x; i<512; i++){
+      args[i] = malloc(sizeof(char)*256);
+    }
+    //printf("status: %d\n", status);
   }
 
+  free(line);
+  free(cmd);
+  for(i=0; i<512; i++)  free(args[i]);
 
 
 }
+
 
 int main(){
 
   smallsh();
 
-  //should clean up the shell here, assuming we have exited, or error has ocurred
 
-    return 0;
+  return 0;
 }
