@@ -65,16 +65,31 @@ void execOther(char *line, char *cmd, char *args[], int x){
   pid_t spawnpid = fork();
   if(spawnpid==0){  //child
     int fd;
+    //if our flag was set to output
     if(isOutput){
-      printf("redirecting to read\n");
-      fd=open(outFile, O_RDONLY);   //open for reading
-      dup2(1, fd);    //redirect from stdout (1) to filedecriptor
+      //printf("redirecting to read\n");
+      fd=open(outFile, O_RDONLY, 0777);   //open for reading
+      dup2(fd, 1);    //redirect from stdout (1) to filedecriptor
     }
+    //if our flag was set to input
     if(isInput){
-      printf("redirecting to write\n");
-      fd=open(inFile, O_WRONLY);    //open for writing
-      dup2(1, fd);    //redirect from stdout to filedecriptor
-      printf("error: %d\n", errno);
+      fd=open(inFile, O_WRONLY | O_CREAT | O_TRUNC, 0777);    //open for writing (give all permission doesn't really matter)
+      //error handling like a good kid
+      if (fd == -1) {
+        printf("The file could not be opened for redirection...\n");
+        fflush(stdout);
+        displayedStatus=-1;
+        exit(1);
+      }
+      else{
+      //printf("file descriptor %d\n", fd);
+      if(dup2(fd, 1)==-1){        //redirect from filedescriptor
+        printf("cannot redirect stdout...\n");
+        fflush(stdout);
+      }
+      displayedStatus=errno;
+      close(fd);
+    }
     }
     //status=0;
     //testing
@@ -122,12 +137,12 @@ int parseInput(char **line, char **cmd, char *args[]){
   if(args[x][0]=='<'){
     isOutput=true;
     strcpy(outFile, args[x+1]);
-    printf("outfile: %s\n", outFile);
+    //printf("outfile: %s\n", outFile);
   }
   else if(args[x][0]=='>'){
     isInput=true;
     strcpy(inFile, args[x+1]);
-    printf("infile: %s\n", inFile);
+    //printf("infile: %s\n", inFile);
   }
   else if(args[x][0]=='&'){
     isBackground=true;
