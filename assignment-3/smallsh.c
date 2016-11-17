@@ -11,6 +11,17 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef int bool;
+#define true 1
+#define false 0
+
+bool isBackground=false;
+bool isOutput=false;
+bool isInput=false;
+
+char inFile[50];
+char outFile[50];
+
 int status=-5;    //overall status    (can change from global later if we run into problems)
 int displayedStatus=0;  //status that we print out (different from the status due to while loop in main)
 
@@ -83,58 +94,32 @@ void execCommands(char *line, char*cmd, char*args[], int x){
 int parseInput(char **line, char **cmd, char *args[]){
   int i, x=0;
   memset(*cmd, '\0', 256);    //make sure cmd is properly init, or we reset cmd from last time
-  //memset(args, '\0', 512);
-  //for(i=0; i<512; i++)  memset(args[i], '\0', 256); //same for arguments
-  //for(i=0; i<5; i++)  args[i] = NULL;
 
-  //testing
-  //int j;
-  /*for(i=0; i<512; i++){
-    printf("arg %d: %s\n", i, args[i]);
-    //if(args[i][0]!='\0')  printf("arg %d: %s\n", i, args[i]);
-    //else  printf("arg %d: %d\n", i, 0)
-    //for(j=0; j<256; j++){
-    //}
-  }*/
-
-  //testing
-  //printf("Line: %s\n", *line);
-
-  //store line as arguments
-  //testing
-  //printf("size of arg[0]: %d\n", sizeof(args[0]));
-  //snprintf(args[0], sizeof(args[0]), "%s", strtok(*line,"\n ,-"));    //initial strtok
   snprintf(args[0], 50, "%s", strtok(*line,"\n ,-"));    //initial strtok
   while(strcmp(args[x], "(null)")!=0){  //will copy in string "(null)" (dont know why)
     x++;
-    //snprintf(args[x], sizeof(args[x]), "%s", strtok(NULL,"\n ,-"));   //every additional strtok (null, we already opened)
     snprintf(args[x], 50, "%s", strtok(NULL,"\n ,-"));
-    //printf("arg[%d]: %s\n", x, args[x]);
+    if(args[x][0]=='<' || args[x][0]=='>' || args[x][0]=='&') {
+      snprintf(args[x+1], 50, "%s", strtok(NULL,"\n ,-"));      //copy the filename into args
+      break;      //no longer arguments
+    }
   }
   //store first arg as cmd
   strcpy(*cmd, args[0]);
-  //testing
-  //printf("cmd: %s\n", *cmd);
-  //printf("X: %d\n", x);
-  /*for(i=0; args[i][0]!='\0'; i++){
-    printf("Arg %d: %s\n", i, args[i]);
-  }
-
-  for(i=0; args[i][0]!='\0'; i++){
-    printf("Arg %d: %s\n", i, args[i]);
-  }*/
-  //memset(args[i-1], '\0', 256);   //remove that (null) arg
-  //printf("memset\n");
-  //this will set the args after last one to NULL so that execvp knows when to stop
   int temp=x;
-  //for(i=x; i<512; i++){
-  //  free(args[i]);
-  //  args[i] = NULL;
-    //printf("arg %d: %s\n", i, args[i]);
-  //}
-  //for(i=0; i<512; i++){
-   //   if(args[i]!=NULL) printf("arg %d: %s\n", i, args[i]);
-    //}
+  if(args[x][0]=='<'){
+    isOutput=true;
+    strcpy(outFile, args[x+1]);
+    printf("outfile: %s\n", outFile);
+  }
+  else if(args[x][0]=='>'){
+    isInput=true;
+    strcpy(inFile, args[x+1]);
+    printf("infile: %s\n", inFile);
+  }
+  else if(args[x][0]=='&'){
+    isBackground=true;
+  }
 
   //we then return that initial x value so we can reallocate memory for what we free'ed
   return temp;
@@ -158,6 +143,9 @@ void smallsh(){
   for(i=0; i<512; i++)  args[i]=malloc(sizeof(char)*256);
 
   while(status){
+    isBackground=false;
+    isOutput=false;
+    isInput=false;
     printf(": ");
     fflush(stdout);
     readInput(&line);
