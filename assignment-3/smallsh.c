@@ -29,6 +29,12 @@ int status=-5;    //overall status    (can change from global later if we run in
 int displayedStatus=0;  //status that we print out (different from the status due to while loop in main)
 
 
+/*
+
+  store process ID's in null-terminator filled array. We can check to see which process have been exited. Then "bubble sort", null terminators to the end
+  upon exiting shell, we will check this array to close any processes that are still open
+*/
+
 //simply exits the shell, will set status to 0 (breaking out of loop)
 void execExit(){
   status=0;
@@ -37,19 +43,12 @@ void execExit(){
 //runs cd build in command
 void execCd(char *cmd, char*args[]){
   char *home = getenv("HOME");
-  //printf("in cd\n");
-  //printf("args at 1: %s\n", args[1]);
   if(!strcmp(args[1], "(null)")){
-    //printf("changing directory to home\n");
     chdir(home);
   }
   else if(!chdir(args[1])){
-    //printf("error in cd\n");
+    printf("error in changing directories...\n");
   }
-  //testing
-  //printf("cmd: %s\n", cmd);
-  //chdir(cmd);
-  //status=0;
 }
 
 //will display status of prev commands
@@ -64,6 +63,8 @@ void execOther(char *line, char *cmd, char *args[], int x){
 
   pid_t spawnpid = fork();
   if(spawnpid==0){  //child
+
+
     int fd;
     //if our flag was set to output
     if(isOutput){
@@ -75,7 +76,7 @@ void execOther(char *line, char *cmd, char *args[], int x){
         exit(1);
       }
       else{
-        if(dup2(fd, 0)==-1){    //redirect from stdout (1) to filedecriptor
+        if(dup2(fd, 0)==-1){    //redirect from stdout (0) to filedecriptor
           printf("cannot redirect stdin...\n");
           fflush(stdout);
         }
@@ -95,24 +96,27 @@ void execOther(char *line, char *cmd, char *args[], int x){
         exit(1);
       }
       else{
-      //printf("file descriptor %d\n", fd);
-      if(dup2(fd, 1)==-1){        //redirect from filedescriptor
-        printf("cannot redirect stdout...\n");
-        fflush(stdout);
+        //printf("file descriptor %d\n", fd);
+        if(dup2(fd, 1)==-1){        //redirect from filedescriptor
+          printf("cannot redirect stdout...\n");
+          fflush(stdout);
+        }
+        displayedStatus=errno;
+        close(fd);
       }
-      displayedStatus=errno;
-      close(fd);
     }
-    }
-    //status=0;
-    //testing
-    //printf("CMD: %s\n", cmd);
-    for(i=x; i<512; i++){
+
+    for(i=x; i<512; i++){   //this sets the last arg to NULL so that execvp knows when to stop
       //free(args[i]);
-      args[i] = NULL;
+      args[i] = NULL;       //should not affect main shell because it's inside fork()
       //printf("arg %d: %s\n", i, args[i]);
     }
-    execvp(cmd, args);    //simply run the cmd with the arguments ***consider redirection later
+    if(isBackground){
+      int devNull = open("/dev/null", O_WRONLY);
+      dup2(devNull, 1);   //redirects to NULL, no error handling (will simply run without outputting);
+      close(devNull);
+    }
+    execvp(cmd, args);    //simply run the cmd with the arguments
     //if child returns from execvp, then there was an error
     printf("error in executing command...\n");
     displayedStatus=-1;
@@ -122,7 +126,12 @@ void execOther(char *line, char *cmd, char *args[], int x){
     status=-1;
   }
   else{               //it's the parent
-    waitpid(spawnpid, &displayedStatus, 0);     //parent wait for child to terminate
+    if(isBackground){ //if we saw an &
+      printf("PID of Background Process: %d\n", spawnpid);
+      fflush(stdout);
+      waitpid(spawnpid, &displayedStatus, WNOHANG);   //parent will not wait for child to terminate
+    }
+    else  waitpid(spawnpid, &displayedStatus, 0);     //parent wait for child to terminate
   }
 }
 //will execute the commands based off of cmd string (checks for built-in commands first)
