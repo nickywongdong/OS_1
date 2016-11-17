@@ -101,10 +101,15 @@ int parseInput(char **line, char **cmd, char *args[]){
   //printf("Line: %s\n", *line);
 
   //store line as arguments
-  snprintf(args[0], sizeof(args[0]), "%s", strtok(*line,"\n ,-"));    //initial strtok
+  //testing
+  //printf("size of arg[0]: %d\n", sizeof(args[0]));
+  //snprintf(args[0], sizeof(args[0]), "%s", strtok(*line,"\n ,-"));    //initial strtok
+  snprintf(args[0], 50, "%s", strtok(*line,"\n ,-"));    //initial strtok
   while(strcmp(args[x], "(null)")!=0){  //will copy in string "(null)" (dont know why)
     x++;
-    snprintf(args[x], sizeof(args[x]), "%s", strtok(NULL,"\n ,-"));   //every additional strtok (null, we already opened)
+    //snprintf(args[x], sizeof(args[x]), "%s", strtok(NULL,"\n ,-"));   //every additional strtok (null, we already opened)
+    snprintf(args[x], 50, "%s", strtok(NULL,"\n ,-"));
+    //printf("arg[%d]: %s\n", x, args[x]);
   }
   //store first arg as cmd
   strcpy(*cmd, args[0]);
