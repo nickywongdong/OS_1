@@ -67,9 +67,22 @@ void execOther(char *line, char *cmd, char *args[], int x){
     int fd;
     //if our flag was set to output
     if(isOutput){
-      //printf("redirecting to read\n");
       fd=open(outFile, O_RDONLY, 0777);   //open for reading
-      dup2(fd, 1);    //redirect from stdout (1) to filedecriptor
+      if (fd == -1) {
+        printf("The file could not be opened for redirection...\n");
+        fflush(stdout);
+        displayedStatus=-1;
+        exit(1);
+      }
+      else{
+        if(dup2(fd, 0)==-1){    //redirect from stdout (1) to filedecriptor
+          printf("cannot redirect stdin...\n");
+          fflush(stdout);
+        }
+      }
+      displayedStatus=errno;
+      close(fd);
+
     }
     //if our flag was set to input
     if(isInput){
@@ -100,6 +113,9 @@ void execOther(char *line, char *cmd, char *args[], int x){
       //printf("arg %d: %s\n", i, args[i]);
     }
     execvp(cmd, args);    //simply run the cmd with the arguments ***consider redirection later
+    //if child returns from execvp, then there was an error
+    printf("error in executing command...\n");
+    displayedStatus=-1;
   }
   else if(spawnpid<0){    //ran into an error
     printf("ERROR\n");
