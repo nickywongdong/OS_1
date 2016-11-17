@@ -22,7 +22,7 @@ void execExit(){
   status=0;
 }
 
-void execCd(char args[512][256]){
+void execCd(char *args[512]){
   //printf("IN CD\n");
   chdir(args[0]);
 }
@@ -33,41 +33,65 @@ void execStatus(){
 }
 
 //fork
-void execLs(char arguments[512][256]){
+void execLs(char *tokens[256], char *arguments[512]){
+  pid_t spawnpid = -5;
   char *args[2];
 
-    args[0] = "/bin/ls";        // first arg is the full path to the executable
+    args[0] = "ls";        // first arg is the full path to the executable
     args[1] = NULL;             // list of args must be NULL terminated
-    //if ( fork() == 0 )
+    spawnpid=fork();
+    if ( spawnpid == 0 ){
         execvp( args[0], args ); // child: call execv with the path and the args
-    //else
-        //wait( &status );        // parent: wait for the child (not really necessary)
+      }
+
+    else  {
+      return;
+      //wait( &status );        // parent: wait for the child (not really necessary)
+    }
 }
 
-void execCat(char args[512][256]){
-  //if(fork()==0) execvp(tokens[0], tokens);
-  //else{
-    //printf("parent will wait\n";);
-    //waitpid();
-  //}
+void execCat(char *tokens[256], char *arguments[512]){
+  char *args[2];
+
+  args[0] = "cat";        // first arg is the full path to the executable
+  args[1] = NULL;             // list of args must be NULL terminated
+
+  if(fork()==0){
+      execvp(args[0], tokens);
+  }
+  else  wait(&status);
 }
 
 //will select the command to exec
-void execCommand(char *cmd, char args[512][256]){
+void execCommand(char *tokens[256], char *cmd, char *args[512]){
   int i;
   /*testing tokens (keep for a while)
   for(i=0; i<10; i++){
     printf("token %d: %s\n", i, tokens[i]);
   }*/
+  //testing
+  printf("The command: %s\n", cmd);
   if(strcmp(cmd, "exit")==0)  execExit();
   else if(strcmp(cmd, "cd")==0)  execCd(args); //assuming the path will be second token
   else if(strcmp(cmd, "status")==0)  execStatus();
-  else if(strcmp(cmd, "ls")==0) execLs(args);
-  else if(strcmp(cmd, "cat")==0) execCat(args);
+  else if(strcmp(cmd, "ls")==0) execLs(tokens, args);
+  else if(strcmp(cmd, "cat")==0) execCat(tokens, args);
+  //else  printf("command not found\n");
 }
+
+
 //separates the input string into *tokens by whitespace
-int parseInput(char *input, char tokens[256][256], char *cmd, char args[512][256]){
+char *parseInput(char *input, char *tokens[256], char *args[512]){
+  char *cmd;
   int i, x=0;
+  for(i=0; i<256; i++){
+    tokens[i]=malloc(sizeof(char)*256);
+  }
+  for(i=0; i<512; i++){  //safetly add null terminators
+    args[i]=malloc(sizeof(char)*256);
+    memset(args[i], '\0', 256);
+  }
+
   for(i=0; i<256; i++)  //safetly add null terminators
     memset(tokens[i], '\0', 256);
   //splits string into tokens, separated by whitespace
@@ -77,8 +101,7 @@ int parseInput(char *input, char tokens[256][256], char *cmd, char args[512][256
   cmd=malloc(sizeof(char)*sizeof(tokens[0]));
   memset(cmd, '\0', sizeof(tokens[0]));
   snprintf(cmd, sizeof(tokens[0]), "%s", tokens[0]);
-  //testing
-  //printf("command: %s\n", cmd);
+
 
 
   for(i=0; i<512; i++)  memset(args[i], '\0', 256);
@@ -95,25 +118,27 @@ int parseInput(char *input, char tokens[256][256], char *cmd, char args[512][256
   for(i=0; strcmp(args[i], "(null)")!=0; i++){
     printf("args: %s\n", args[i]);
   }*/
-  return x;
+  return cmd;
 }
 
 //main shell loop, will return to main upon any error or exit()
 void smallsh(){
-  int numTokens;
+  //int numTokens;
   size_t bufsize = 0;
   char *input = NULL;
-  char tokens[256][256];
+  char *tokens[256];
   char *cmd;
-  char args[512][256];  //max 512 args, 256 in length
+  char *args[512];  //max 512 args, 256 in length
 
   while(status){
     //testing
     //printf("status: %d\n", status);
     printf(": ");
-    getline(&input, &bufsize, stdin);   //automatically allocs mem for input
-    numTokens=parseInput(input, tokens, cmd, args);
-    execCommand(cmd, args);
+    fflush(stdout);
+    fflush(stdin);
+    getline(&input, bufsize, stdin);   //automatically allocs mem for input
+    cmd=parseInput(input, tokens, args);  //or pass cmd by reference
+    execCommand(tokens, cmd, args);
   }
 
 
