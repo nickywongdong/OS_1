@@ -33,27 +33,18 @@ int displayedStatus=0;  //status that we print out (different from the status du
 
 pid_t spawnpid=-5;
 
-/*
-
-  store process ID's in null-terminator filled array. We can check to see which process have been exited. Then "bubble sort", null terminators to the end
-  upon exiting shell, we will check this array to close any processes that are still open
-*/
-
 //simply exits the shell, will set status to 0 (breaking out of loop)
 void execExit(){
   SHELL=false;  //return;
-  //exit(1);
 }
 
 //runs cd build in command
 void execCd(char *cmd, char*args[]){
-  //testing
-  //printf("IN CD\n");
   char *home = getenv("HOME");
-  if(args[1][0]=='\0'){
+  if(args[1][0]=='\0'){     //only cd to HOME if there are no arguments
     chdir(home);
   }
-  else if(!chdir(args[1])){
+  else if(chdir(args[1])){    //otherwise we take the path to cd
     printf("error in changing directories...\n");
   }
 }
@@ -73,7 +64,6 @@ void execOther(char *line, char *cmd, char *args[], int x){
     signal (SIGINT, SIG_DFL);    //reset signal to normal behavior
 
     int fd;
-    //if our flag was set to output
 
     //check if we want to run in background
     if(isBackground){
@@ -81,7 +71,7 @@ void execOther(char *line, char *cmd, char *args[], int x){
       dup2(devNull, 1);   //redirects to NULL, no error handling (will simply run without outputting);
       close(devNull);
     }
-
+    //if our flag was set to output
     if(isOutput){
       fd=open(outFile, O_RDONLY, 0777);   //open for reading
       if (fd == -1) {
@@ -111,7 +101,7 @@ void execOther(char *line, char *cmd, char *args[], int x){
         exit(1);
       }
       else{
-        //printf("file descriptor %d\n", fd);
+
         if(dup2(fd, 1)==-1){        //redirect from filedescriptor
           printf("cannot redirect stdout...\n");
           fflush(stdout);
@@ -122,11 +112,9 @@ void execOther(char *line, char *cmd, char *args[], int x){
     }
 
     for(i=x; i<512; i++){   //this sets the last arg to NULL so that execvp knows when to stop
-      //free(args[i]);
       args[i] = NULL;       //should not affect main shell because it's inside fork()
-      //printf("arg %d: %s\n", i, args[i]);
     }
-    //printf("command: %s\n", cmd);
+
     execvp(cmd, args);    //simply run the cmd with the arguments
     //if child returns from execvp, then there was an error
     printf("error in executing command...\n");
@@ -142,29 +130,59 @@ void execOther(char *line, char *cmd, char *args[], int x){
       printf("PID of Background Process: %d\n", spawnpid);
       fflush(stdout);
       int background=waitpid(0, &displayedStatus, WNOHANG);   //parent will not wait for child to terminate
-      //printf("value of background: %d\n", background);
       if(background==-1)  printf("error has ocurred...\n");
       //else  if(WIFEXITED(displayedStatus))  printf("process %d has terminated\n", spawnpid);
     }
-    //this will search for any running processes
-    //waitpid(0, &displayedStatus, WNOHANG);   //parent will not wait for child to terminate
-
+    //this is for foreground processes
     else  {
       waitpid(spawnpid, &displayedStatus, 0);     //parent wait for child to terminate
-      if(WIFEXITED(displayedStatus))  printf("process %d has terminated\n", spawnpid);
+      if(displayedStatus) displayedStatus=1;    //if it's not 0, then it will be 1
+      else if(WIFSIGNALED(displayedStatus)){
+        printf("terminated by signal %d\n", WTERMSIG(displayedStatus));
+      }
   }
 }
 }
+
+//checks any processes in the background and updates its status to stdout
+void checkBackground() {
+    int pid;
+    int s_status;
+
+    // Check for finished processes
+    do {
+        pid = waitpid(-1, &s_status, WNOHANG);
+
+        // Has a background process has died?
+        if (0 < pid) {
+            printf("Background PID %d is done: ", pid);
+            fflush(stdout);
+
+            // Check and print if its a signal exit or a normal exit
+            if (WIFSIGNALED(s_status) != 0) {
+                printf("terminated by signal %d\n", WTERMSIG(s_status));
+                fflush(stdout);
+            }
+            if (WIFEXITED(s_status)) {
+                printf("exit value %d\n", WEXITSTATUS(s_status));
+                fflush(stdout);
+            }
+        }
+    } while (0 < pid);
+}
+
 //will execute the commands based off of cmd string (checks for built-in commands first)
 void execCommands(char *line, char*cmd, char*args[], int x){
   //first we check for built-in commands
-  //testing
+  memset(args[x], '\0', 256);   //set position after last argument to NULL so execvp knows when to stop
+  checkBackground();
   if(strcmp(args[0], "exit")==0)  execExit();
   else if(strcmp(args[0], "cd")==0) execCd(cmd, args);
   else if(strcmp(args[0], "status")==0) execStatus();
   else if(!strcmp(args[0], "(null)") || args[0][0]=='#') return;   //this means arg was null, or comment
   else  execOther(line, cmd, args, x);
 }
+
 //splits the input string by spaces, and stops at the newline
 int parseInput(char **line, char **cmd, char *args[]){
   int i, x=0;
@@ -173,21 +191,15 @@ int parseInput(char **line, char **cmd, char *args[]){
   memset(temp, '\0', 256);
 
   snprintf(args[0], 50, "%s", strtok(*line,"\n ,-"));    //initial strtok
-  //printf("arg 0: %s\n", args[0]);
-  strcpy(temp, args[0]);
+  strcpy(temp, args[0]);    //first store into temp
   x++;
   while(1){  //will copy in string "(null)" (dont know why)
-    //testing
-    //snprintf(args[x], 50, "%s", strtok(NULL,"\n ,-"));
-
     snprintf(temp, 50, "%s", strtok(NULL,"\n ,-"));     //first copy strtok into a temp to compare
-    if(strcmp(temp, "(null)")==0)  break;     //
+    if(strcmp(temp, "(null)")==0)  break;     //break if we see a null
     if(temp[0]=='<') {
       isOutput=true;
       snprintf(temp, 50, "%s", strtok(NULL,"\n ,-"));
       strcpy(outFile, temp);    //then end, we shouldn't copy redirection to arguments
-
-      //snprintf(args[x], 50, "%s", temp);      //copy the temp into args
     }
 
     else if(temp[0]=='>'){
@@ -196,33 +208,20 @@ int parseInput(char **line, char **cmd, char *args[]){
       strcpy(inFile, temp);   //same as above
     }
     else if(temp[0]=='&'){
-      isBackground=true;
+      isBackground=true;    //simply set for later
     }
 
     else{   //if it's none of the redirections, then it should be an argument
-      strcpy(args[x], temp);
+      strcpy(args[x], temp);    //add to arguments list, and iterate x
        x++;
     }
   }
   //store first arg as cmd
-  strcpy(*cmd, args[0]);            //this is broken
+  strcpy(*cmd, args[0]);            //this might be broken
   int temp_x=x;
-  /*if(args[x][0]=='<'){
-    isOutput=true;
-    strcpy(outFile, args[x+1]);
-    //printf("outfile: %s\n", outFile);
-  }
-  else if(args[x][0]=='>'){
-    isInput=true;
-    strcpy(inFile, args[x+1]);
-    //printf("infile: %s\n", inFile);
-  }
-  else if(args[x][0]=='&'){
-    isBackground=true;
-  }*/
 
   //we then return that initial x value so we can reallocate memory for what we free'ed
-  return temp_x;
+  return temp_x;  //this is used later to know when to null terminate the args
 }
 
 
@@ -232,10 +231,9 @@ void readInput(char **line){
   memset(*line, '\0', 2048);    //reset line
   getline(&*line, &bufsize, stdin);
   fflush(stdin);
-
-  //testing
-  //printf("input: %s\n", line);
 }
+
+//our main shell loop
 void smallsh(){
   int i, x;
   signal(SIGINT, SIG_IGN);
@@ -244,31 +242,22 @@ void smallsh(){
   for(i=0; i<512; i++)  args[i]=malloc(sizeof(char)*256);
 
   while(SHELL){
-    //if(WIFEXITED(displayedStatus))  printf("process %d has terminated\n", spawnpid);
+    //reset these each time (assume not true)
     isBackground=false;
     isOutput=false;
     isInput=false;
     printf(": ");
     fflush(stdout);
-    readInput(&line);
-    //testing
-    //printf("status: %d\n", status);
-    //printf("line: %s\n", line);
-    //for(i=0; i<512; i++)
-    //  printf("arg %d: %s\n", i, args[i]);
-    x=parseInput(&line, &cmd, args);
-    //for(i=0; i<512; i++){
-    //  if(args[i]!=NULL) printf("arg %d: %s\n", i, args[i]);
-    //}
-    execCommands(line, cmd, args, x);
-    //testing
-    //printf("Value of x: %d\n", x);
+    readInput(&line);     //first we read in input
+    x=parseInput(&line, &cmd, args);  //then parse the line
+    execCommands(line, cmd, args, x); //execute our cmds
+    //alloc memory for args, assuming we free'd
     for(i=x; i<512; i++){
       args[i] = malloc(sizeof(char)*256);
     }
-    //printf("status: %d\n", status);
   }
 
+  //clean up our pointers
   free(line);
   free(cmd);
   for(i=0; i<512; i++)  free(args[i]);
