@@ -23,8 +23,13 @@ void parseBuffer(char buffer[2048], char **key, char **text){
 }
 
 //encrypt text based off key
-void encryptMessage(char *key, char *text){
+void encryptMessage(char *key, char *text, char **msg){
+	//can consider randomizing this string in a function...
 	char *alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
+	char *msgTemp = malloc(sizeof(char)*strlen(text+1));	//temp for encrpyted msg
+	memset(msgTemp, '\0', strlen(text+1));
+	*msg = malloc(sizeof(char)*strlen(text+1));	//this will be our encrypted msg (+1 for null later)
+	memset(*msg, '\0', strlen(text+1));	//init to all null characters
 	int *temp1 = malloc(sizeof(int)*strlen(text)+1);
 	int *temp2 = malloc(sizeof(int)*strlen(key)+1);	//same length, but for sake of formality
 	int *temp3 = malloc(sizeof(int)*strlen(text)+1);	//to store the encrypted msg
@@ -33,22 +38,34 @@ void encryptMessage(char *key, char *text){
 	//store text as its integer value (from alpha array) into temp1
 	for(i=0; i<strlen(text); i++){
 		for(j=0; j<27; j++){
-			if(text[i]==alpha[j])	temp1[i]=j;
+			if(text[i]==alpha[j])	temp1[i]=j*5;	//arbitrary for hash
 		}
 	}
 	//store key as its integer value (from alpha array) into temp2
 	for(i=0; i<strlen(key); i++){
 		for(j=0; j<27; j++){
-			if(key[i]==alpha[j])	temp2[i]=j;
+			if(key[i]==alpha[j])	temp2[i]=j*5;
 		}
 	}
 
 	//add the two values together
 	for(i=0; i<strlen(text); i++){
 		temp3[i]=temp1[i]+temp2[i];
-		//make sure our # doesn't go over 27
-		if(temp3[i]>27)	temp3[i]=temp3[i]-27;
 	}
+
+	//take modulus 27 of each element
+	for(i=0; i<strlen(text); i++){
+		temp3[i]=temp3[i]%27;
+	}
+
+	//"convert" the integers back chars using alpha array
+	for(i=0; i<strlen(text); i++){
+		for(j=0; j<27; j++){
+			if(temp3[i]==j)	msgTemp[i]=alpha[j];
+		}
+	}
+	//store our temporary into our msg from main
+	snprintf(*msg, strlen(text), msgTemp);
 }
 
 int main(int argc, char *argv[])
@@ -56,7 +73,7 @@ int main(int argc, char *argv[])
 	int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
 	socklen_t sizeOfClientInfo;
 	char buffer[2048];		//arbitrary length
-	char *key, *text;
+	char *key, *text, *msg;
 	struct sockaddr_in serverAddress, clientAddress;
 
 	if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
@@ -89,7 +106,7 @@ int main(int argc, char *argv[])
 	//printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
 	parseBuffer(buffer, &key, &text);
-	encryptMessage(key, text);
+	encryptMessage(key, text, &msg);
 
 	// Send a Success message back to the client
 	charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back
