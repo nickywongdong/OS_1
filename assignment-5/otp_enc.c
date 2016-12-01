@@ -12,7 +12,7 @@ void error(const char *msg) { perror(msg); exit(0); } // Error function used for
 int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//checks the length of key generated
 	char keyString[2048], textString[2048], ch;
 	int i=0, j=0, bufferLength;
-
+	//get wc of both files
  	while (1) {
         ch = fgetc(key);
         if (ch == EOF)	break;
@@ -24,15 +24,16 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
         if (ch == EOF)	break;
         ++j;
     }
-    bufferLength=i+j;
+    bufferLength=i+j+2;	//+2 for extra newline characters
 
-
+    //if they lengths do not equal, exit
 	if(i!=j){
 		printf("Keygen length: %d, Plaintext length: %d, lengths must match!!\n", i, j);
 		fclose(key);
     	fclose(plaintext);
 		exit(1);
 	}
+	//rewind file pointers to store string in pointers
 	rewind(key);
 	rewind(plaintext);
 
@@ -54,8 +55,10 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
 		textTemp[j]=ch;
 		j++;
 	}
+	//copy temp into actual pointers from main
 	sprintf(*myKey, keyTemp);
 	sprintf(*myText, textTemp);
+	//clean up
 	free(keyTemp);
 	free(textTemp);
 	fclose(key);
@@ -100,23 +103,8 @@ int main(int argc, char *argv[])
 	FILE *plaintext = fopen(textFile, "r");
 	if(key==NULL || plaintext == NULL)	printf("error in opening file...\n");
 	int bufferLength = readFiles(key, plaintext, &myKey, &myText);
-	//testing
-	//printf("mykey is %s, my text is: %s\n", myKey, myText);
-
 	buffer = malloc(sizeof(char)*bufferLength);
-	snprintf(buffer, bufferLength, "%s %s", myKey, myText);		//concatenate key and text to buffer
-	//testing
-	//printf("concatenated string: %s\n", buffer);
-
-
-	//combineStrings(key, plaintext, bufferLength);
-
-	//printf("CLIENT: Enter text to send to the server, and then hit enter: ");
-	//memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer array
-	//fgets(buffer, sizeof(buffer) - 1, stdin); // Get input from the user, trunc to buffer - 1 chars, leaving \0
-	//buffer[strcspn(buffer, "\n")] = '\0'; // Remove the trailing \n that fgets adds
-
-
+	snprintf(buffer, bufferLength, "%s%s", myKey, myText);		//concatenate key and text to buffer
 
 	// Send message to server
 	charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
@@ -124,8 +112,8 @@ int main(int argc, char *argv[])
 	if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
 
 	// Get return message from server
-	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
-	charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); // Read data from the socket, leaving \0 at end
+	memset(buffer, '\0', bufferLength); // Clear out the buffer again for reuse
+	charsRead = recv(socketFD, buffer, bufferLength - 1, 0); // Read data from the socket, leaving \0 at end
 	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
 	printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
 
