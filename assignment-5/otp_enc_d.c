@@ -10,18 +10,69 @@ void error(const char *msg) { perror(msg); exit(1); } // Error function used for
 
 //splits the string received from client to be encrypted
 void parseBuffer(char buffer[2048], char **key, char **text){
-	char *keyTemp, *textTemp;
+	char *keyTemp, *textTemp, *temp;
 	int i, count;
 
-	char * pch;
-  	//printf ("Splitting string \"%s\" into tokens:\n",str);
-  	pch = strtok (buffer,"\n");
-  	while (pch != NULL){
-  		//testing
-  		printf("size of pch: %d\n", strlen(pch));
-    	printf ("%s\n",pch);
-    	pch = strtok (NULL, "\n");
-  	}
+  	temp = strtok (buffer,"\n");	//tokenize the buffer twice (only should be two separate strings)
+  	//printf("length of temp: %d\n", strlen(temp));
+  	*key = malloc(sizeof(char)*strlen(temp)+1);		//need the additional 1 '\0'
+  	*text = malloc(sizeof(char)*strlen(temp)+1);		//we will assume that both strings are same length
+  	snprintf(*key, strlen(temp)+1, temp);
+  	temp = strtok(NULL, "\n");
+  	snprintf(*text, strlen(temp)+1, temp);
+}
+
+//encrypt text based off key
+void encryptMessage(char *key, char *text){
+	char *alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
+	int *temp1 = malloc(sizeof(int)*strlen(text)+1);
+	int *temp2 = malloc(sizeof(int)*strlen(key)+1);	//same length, but for sake of formality
+	int *temp3 = malloc(sizeof(int)*strlen(text)+1);	//to store the encrypted msg
+	int i, j;
+
+	//testing
+	printf("strlen of text: %d\n", strlen(text)+1);
+
+	//store text as its integer value (from alpha array) into temp1
+	for(i=0; i<strlen(text)+1; i++){
+		for(j=0; j<27; j++){
+			if(text[i]==alpha[j])	temp1[i]=j;
+		}
+	}
+	//store key as its integer value (from alpha array) into temp2
+	for(i=0; i<strlen(key)+1; i++){
+		for(j=0; j<27; j++){
+			if(key[i]==alpha[j])	temp2[i]=j;
+		}
+	}
+
+	//testing
+	printf("temp1: \n");
+	for(i=0; i<37; i++)	printf("%d ", temp1[i]);
+	printf("\ntemp2: \n");
+	for(i=0; i<37; i++)	printf("%d ", temp2[i]);
+	printf("\n");
+
+	printf("last temp1: %d\n", temp1[36]);
+	printf("last temp2: %d\n", temp2[36]);
+
+
+
+	//add the two values together
+	for(i=0; i<strlen(text)+1; i++){
+		//printf("temp1 at %d: %d\n", i, temp1[i]);
+		//printf("temp2 at %d: %d\n", i, temp2[i]);
+		temp3[i]=temp1[i]+temp2[i];
+		//printf("temp3 at %d (should be sum): %d\n", i, temp3[i]);
+		if(temp3[i]>27)	temp3[i]=temp3[i]-27;	//make sure our # doesn't go over 27
+	}
+
+	//testing
+	//for(i=0; i<27; i++)	printf("temp3 at %d: %d\n", i, temp3[i]);
+	//printf("text: %s\n", text);
+	//printf("temp: %s\n", temp1);
+	//printf("temp at 0: %d\n", temp1[0]);
+	//printf("temp at 1: %d\n", temp1[1]);
 }
 
 int main(int argc, char *argv[])
@@ -59,9 +110,10 @@ int main(int argc, char *argv[])
 	memset(buffer, '\0', 2048);
 	charsRead = recv(establishedConnectionFD, buffer, 2048, 0); // Read the client's message from the socket
 	if (charsRead < 0) error("ERROR reading from socket");
-	printf("SERVER: I received this from the client: \"%s\"\n", buffer);
+	//printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
 	parseBuffer(buffer, &key, &text);
+	encryptMessage(key, text);
 
 	// Send a Success message back to the client
 	charsRead = send(establishedConnectionFD, "I am the server, and I got your message", 39, 0); // Send success back

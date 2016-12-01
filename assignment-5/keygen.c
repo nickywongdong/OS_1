@@ -14,9 +14,8 @@ int main(int argc, char *argv[]){
 
    srand(time(NULL));
 
-   for(i=0; i<length; i++)
-	string[i]="ABCDEFGHIJKLMNOPQRSTUVWXYZ "[random () % 27];      //random char from string
-   string[length]='\n';		//add newling last
+   for(i=0; i<length; i++)  string[i]="ABCDEFGHIJKLMNOPQRSTUVWXYZ "[random () % 27];      //random char from string
+   string[length]='\n';		//add newline last
    printf("%s", string);   //goes to stdout
 
    return 0;
