@@ -9,34 +9,58 @@
 
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 
-void checkLength(FILE *key, FILE *plaintext){			//checks the length of key generated
-	printf("Am now checking length...\n");
+int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//checks the length of key generated
 	char keyString[2048], textString[2048], ch;
-	int i=0, j=0;
+	int i=0, j=0, bufferLength;
 
  	while (1) {
         ch = fgetc(key);
-        if (ch == EOF)
-            break;
+        if (ch == EOF)	break;
         ++i;
     }
 
      while (1) {
         ch = fgetc(plaintext);
-        if (ch == EOF)
-            break;
+        if (ch == EOF)	break;
         ++j;
     }
+    bufferLength=i+j;
 
-    fclose(key);
-    fclose(plaintext);
 
-	printf("length of key: %d, length of plaintext: %d\n", i, j);
 	if(i!=j){
 		printf("Keygen length: %d, Plaintext length: %d, lengths must match!!\n", i, j);
+		fclose(key);
+    	fclose(plaintext);
 		exit(1);
 	}
-	else	return;
+	rewind(key);
+	rewind(plaintext);
+
+	char *keyTemp=malloc(sizeof(char)*i), *textTemp=malloc(sizeof(char)*j);
+	*myKey = malloc(sizeof(char)*i);
+	*myText = malloc(sizeof(char)*j);
+
+	i=0;
+	j=0;
+	while(1){
+		ch=fgetc(key);
+		if(ch==EOF)	break;
+		keyTemp[i]=ch;
+		++i;
+	}
+	while(1){
+		ch=fgetc(plaintext);
+		if(ch==EOF)	break;
+		textTemp[j]=ch;
+		j++;
+	}
+	sprintf(*myKey, keyTemp);
+	sprintf(*myText, textTemp);
+	free(keyTemp);
+	free(textTemp);
+	fclose(key);
+    fclose(plaintext);
+	return bufferLength;
 }
 
 int main(int argc, char *argv[])
@@ -44,7 +68,7 @@ int main(int argc, char *argv[])
 	int socketFD, portNumber, charsWritten, charsRead;
 	struct sockaddr_in serverAddress;
 	struct hostent* serverHostInfo;
-	char buffer[256];
+	//char buffer[256];
 
 	if (argc < 4) { fprintf(stderr,"USAGE: %s port key plaintext\n", argv[0]); exit(0); } // Check usage & args
 
@@ -71,19 +95,26 @@ int main(int argc, char *argv[])
 	// Sending data to server (or otp_end_d.c in this case)
 	char *keyFile = argv[2];
 	char *textFile = argv[3];		//setting filenames
-	//testing
-	printf("keyfilename: %s, plaintext filename: %s\n", keyFile, textFile);
-
-	int i=0;
+	char *myKey, *myText, *buffer;
 	FILE *key = fopen(keyFile, "r");
 	FILE *plaintext = fopen(textFile, "r");
 	if(key==NULL || plaintext == NULL)	printf("error in opening file...\n");
-	checkLength(key, plaintext);
+	int bufferLength = readFiles(key, plaintext, &myKey, &myText);
+	//testing
+	//printf("mykey is %s, my text is: %s\n", myKey, myText);
 
-	printf("CLIENT: Enter text to send to the server, and then hit enter: ");
-	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer array
-	fgets(buffer, sizeof(buffer) - 1, stdin); // Get input from the user, trunc to buffer - 1 chars, leaving \0
-	buffer[strcspn(buffer, "\n")] = '\0'; // Remove the trailing \n that fgets adds
+	buffer = malloc(sizeof(char)*bufferLength);
+	snprintf(buffer, bufferLength, "%s %s", myKey, myText);		//concatenate key and text to buffer
+	//testing
+	//printf("concatenated string: %s\n", buffer);
+
+
+	//combineStrings(key, plaintext, bufferLength);
+
+	//printf("CLIENT: Enter text to send to the server, and then hit enter: ");
+	//memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer array
+	//fgets(buffer, sizeof(buffer) - 1, stdin); // Get input from the user, trunc to buffer - 1 chars, leaving \0
+	//buffer[strcspn(buffer, "\n")] = '\0'; // Remove the trailing \n that fgets adds
 
 
 
