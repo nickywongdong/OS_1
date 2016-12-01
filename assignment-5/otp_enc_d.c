@@ -30,49 +30,25 @@ void encryptMessage(char *key, char *text){
 	int *temp3 = malloc(sizeof(int)*strlen(text)+1);	//to store the encrypted msg
 	int i, j;
 
-	//testing
-	printf("strlen of text: %d\n", strlen(text)+1);
-
 	//store text as its integer value (from alpha array) into temp1
-	for(i=0; i<strlen(text)+1; i++){
+	for(i=0; i<strlen(text); i++){
 		for(j=0; j<27; j++){
 			if(text[i]==alpha[j])	temp1[i]=j;
 		}
 	}
 	//store key as its integer value (from alpha array) into temp2
-	for(i=0; i<strlen(key)+1; i++){
+	for(i=0; i<strlen(key); i++){
 		for(j=0; j<27; j++){
 			if(key[i]==alpha[j])	temp2[i]=j;
 		}
 	}
 
-	//testing
-	printf("temp1: \n");
-	for(i=0; i<37; i++)	printf("%d ", temp1[i]);
-	printf("\ntemp2: \n");
-	for(i=0; i<37; i++)	printf("%d ", temp2[i]);
-	printf("\n");
-
-	printf("last temp1: %d\n", temp1[36]);
-	printf("last temp2: %d\n", temp2[36]);
-
-
-
 	//add the two values together
-	for(i=0; i<strlen(text)+1; i++){
-		//printf("temp1 at %d: %d\n", i, temp1[i]);
-		//printf("temp2 at %d: %d\n", i, temp2[i]);
+	for(i=0; i<strlen(text); i++){
 		temp3[i]=temp1[i]+temp2[i];
-		//printf("temp3 at %d (should be sum): %d\n", i, temp3[i]);
-		if(temp3[i]>27)	temp3[i]=temp3[i]-27;	//make sure our # doesn't go over 27
+		//make sure our # doesn't go over 27
+		if(temp3[i]>27)	temp3[i]=temp3[i]-27;
 	}
-
-	//testing
-	//for(i=0; i<27; i++)	printf("temp3 at %d: %d\n", i, temp3[i]);
-	//printf("text: %s\n", text);
-	//printf("temp: %s\n", temp1);
-	//printf("temp at 0: %d\n", temp1[0]);
-	//printf("temp at 1: %d\n", temp1[1]);
 }
 
 int main(int argc, char *argv[])
