@@ -54,13 +54,13 @@ void decryptMessage(char *key, char *text, char **msg){
       temp3[i]=temp1[i]-temp2[i];
    }
 
+
    int c;
    //take modulus 27 of each element (a little extra for the negatives)
    for(i=0; i<strlen(text); i++){
       if(temp3[i]<0){
-         //abs((c/b) * b - c) where c is abs(a);
          c=abs(temp3[i]);
-         temp3[i] = abs((c/27) * 27 - c);
+         temp3[i] = 27 - c;
       }
       else  temp3[i]=temp3[i]%27;
    }

@@ -67,9 +67,6 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
 	fclose(key);
     fclose(plaintext);
 
-    //testing
-    //printf("our ciphertext: %s\n", )
-
 	return bufferLength;
 }
 
