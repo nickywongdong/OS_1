@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
+void error(const char *msg) { perror(msg); exit(EXIT_FAILURE); } // Error function used for reporting issues
 
 //splits the string received from client to be encrypted
 void parseBuffer(char buffer[500000], char **key, char **text){
@@ -88,7 +88,7 @@ void encryptMessage(char *key, char *text, char **msg){
 
 int main(int argc, char *argv[])
 {
-
+	pid_t spawnpid=-5;
 	int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
 	socklen_t sizeOfClientInfo;
 	char buffer[500000];		//arbitrary length
@@ -96,8 +96,6 @@ int main(int argc, char *argv[])
 	struct sockaddr_in serverAddress, clientAddress;
 
 	if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
-
-	//fork here? after receiving input
 
 	// Set up the address struct for this process (the server)
 	memset((char *)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
@@ -115,10 +113,32 @@ int main(int argc, char *argv[])
 		error("ERROR on binding");
 	listen(listenSocketFD, 5); // Flip the socket on - it can now receive up to 5 connections
 
+	while(1){
+
 	// Accept a connection, blocking if one is not available until one connects
 	sizeOfClientInfo = sizeof(clientAddress); // Get the size of the address for the client that will connect
 	establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); // Accept
 	if (establishedConnectionFD < 0) error("ERROR on accept");
+
+	//fork after switching socket on and accepting connection
+	spawnpid=fork();
+	//error
+	if(spawnpid<0){
+		fprintf(stderr, "error in forking\n");
+		exit(EXIT_FAILURE);
+	}
+	//this is the parent, go back to accepting connections
+	else if (spawnpid>0);//{
+		//close(establishedConnectionFD); // Close the existing socket which is connected to the client
+		//close(listenSocketFD); // Close the listening socket
+	//}
+		//close(establishedConnectionFD);
+		//continue;
+
+	//this is the child
+	else if(spawnpid==0){
+
+
 
 	// Get the message from the client and display it
 	memset(buffer, '\0', 500000);
@@ -134,5 +154,12 @@ int main(int argc, char *argv[])
 	if (charsRead < 0) error("ERROR writing to socket");
 	close(establishedConnectionFD); // Close the existing socket which is connected to the client
 	close(listenSocketFD); // Close the listening socket
+	exit(EXIT_SUCCESS);
+}
+
+	close(establishedConnectionFD); // Close the existing socket which is connected to the client
+	//close(listenSocketFD); // Close the listening socket
+}
+//}
 	return 0;
 }

@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 	struct hostent* serverHostInfo;
 	//char buffer[256];
 
-	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
+	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(EXIT_FAILURE); } // Check usage & args
 
 	// Set up the server address struct
 	memset((char*)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 	serverAddress.sin_port = htons(portNumber); // Store the port number
 	serverHostInfo = gethostbyname("localhost");	//host localhost by default
 	//serverHostInfo = gethostbyname(argv[1]); // Convert the machine name into a special form of address
-	if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT: ERROR, no such host\n"); exit(0); }
+	if (serverHostInfo == NULL) { fprintf(stderr, "CLIENT: ERROR, no such host\n"); exit(2); }
 	memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length); // Copy in the address
 
 	// Set up the socket
@@ -125,10 +125,11 @@ int main(int argc, char *argv[])
 	//printf("buffer (should be empty): %s\n", buffer);
 	//printf("buffer length: %d\n", bufferLength);
 	//printf("the length of myText: %d\n", strlen(myText));
+	fflush(stdout);
 	charsRead = recv(socketFD, buffer, sizeof(buffer)-1, 0);
 	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
 
-	printf("%s\n", buffer);
+	fprintf(stdout, "%s\n", buffer);
 
 	close(socketFD); // Close the socket
 	return 0;
