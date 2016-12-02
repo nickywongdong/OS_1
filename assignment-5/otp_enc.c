@@ -73,11 +73,11 @@ int main(int argc, char *argv[])
 	struct hostent* serverHostInfo;
 	//char buffer[256];
 
-	if (argc < 4) { fprintf(stderr,"USAGE: %s port key plaintext\n", argv[0]); exit(0); } // Check usage & args
+	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
 
 	// Set up the server address struct
 	memset((char*)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
-	portNumber = atoi(argv[1]); // Get the port number, convert to an integer from a string
+	portNumber = atoi(argv[3]); // Get the port number, convert to an integer from a string
 	serverAddress.sin_family = AF_INET; // Create a network-capable socket
 	serverAddress.sin_port = htons(portNumber); // Store the port number
 	serverHostInfo = gethostbyname("localhost");	//host localhost by default
@@ -97,11 +97,13 @@ int main(int argc, char *argv[])
 
 	// Sending data to server (or otp_end_d.c in this case)
 	char *keyFile = argv[2];
-	char *textFile = argv[3];		//setting filenames
+	char *textFile = argv[1];		//setting filenames
 	char *myKey, *myText, *buffer;
+	//open plaintext & key
 	FILE *key = fopen(keyFile, "r");
 	FILE *plaintext = fopen(textFile, "r");
 	if(key==NULL || plaintext == NULL)	printf("error in opening file...\n");
+	//parse files
 	int bufferLength = readFiles(key, plaintext, &myKey, &myText);
 	buffer = malloc(sizeof(char)*bufferLength);
 	snprintf(buffer, bufferLength, "%s%s", myKey, myText);		//concatenate key and text to buffer
@@ -115,7 +117,8 @@ int main(int argc, char *argv[])
 	memset(buffer, '\0', bufferLength); // Clear out the buffer again for reuse
 	charsRead = recv(socketFD, buffer, bufferLength - 1, 0); // Read data from the socket, leaving \0 at end
 	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
-	printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+
+	printf("%s\n", buffer);
 
 	close(socketFD); // Close the socket
 	return 0;
