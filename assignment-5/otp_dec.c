@@ -63,6 +63,7 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
 	free(textTemp);
 	fclose(key);
     fclose(plaintext);
+
 	return bufferLength;
 }
 
@@ -71,7 +72,6 @@ int main(int argc, char *argv[])
 	int socketFD, portNumber, charsWritten, charsRead;
 	struct sockaddr_in serverAddress;
 	struct hostent* serverHostInfo;
-	//char buffer[256];
 
 	if (argc < 4) { fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); exit(0); } // Check usage & args
 

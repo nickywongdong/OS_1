@@ -9,14 +9,14 @@
 void error(const char *msg) { perror(msg); exit(1); } // Error function used for reporting issues
 
 //splits the string received from client to be encrypted
-void parseBuffer(char buffer[2048], char **key, char **text){
+void parseBuffer(char buffer[500000], char **key, char **text){
 	char *keyTemp, *textTemp, *temp;
 	int i, count;
 
-  	temp = strtok (buffer,"\n");	//tokenize the buffer twice (only should be two separate strings)
-  	//printf("length of temp: %d\n", strlen(temp));
+	//tokenize the buffer twice (only should be two separate strings)
+  	temp = strtok (buffer,"\n");
   	*key = malloc(sizeof(char)*strlen(temp)+1);		//need the additional 1 '\0'
-  	*text = malloc(sizeof(char)*strlen(temp)+1);		//we will assume that both strings are same length
+  	*text = malloc(sizeof(char)*strlen(temp)+1);		//encoded msg only needs to be same length as plaintext
   	snprintf(*key, strlen(temp)+1, temp);
   	temp = strtok(NULL, "\n");
   	snprintf(*text, strlen(temp)+1, temp);
@@ -35,6 +35,17 @@ void encryptMessage(char *key, char *text, char **msg){
 	int *temp3 = malloc(sizeof(int)*strlen(text)+1);	//to store the encrypted msg
 	int i, j;
 
+	//first check is any of the chars are bad chars
+	int check=0;
+	for(i=0; i<strlen(text); i++){
+		for(j=0; j<27; j++){
+			if(text[i]==alpha[j]) check++;
+		}
+	}
+	if(check!=strlen(text)){
+		fprintf(stderr, "One or more of the chars in text are not accepted\n");
+		exit(EXIT_FAILURE);
+	}
 	//store text as its integer value (from alpha array) into temp1
 	for(i=0; i<strlen(text); i++){
 		for(j=0; j<27; j++){
@@ -64,19 +75,29 @@ void encryptMessage(char *key, char *text, char **msg){
 			if(temp3[i]==j)	msgTemp[i]=alpha[j];
 		}
 	}
+
 	//store our temporary into our msg from main
-	snprintf(*msg, strlen(text), msgTemp);
+	snprintf(*msg, strlen(text)+1, msgTemp);
+
+	//clean up
+	free(msgTemp);
+	free(temp1);
+	free(temp2);
+	free(temp3);
 }
 
 int main(int argc, char *argv[])
 {
+
 	int listenSocketFD, establishedConnectionFD, portNumber, charsRead;
 	socklen_t sizeOfClientInfo;
-	char buffer[2048];		//arbitrary length
+	char buffer[500000];		//arbitrary length
 	char *key, *text, *msg;
 	struct sockaddr_in serverAddress, clientAddress;
 
 	if (argc < 2) { fprintf(stderr,"USAGE: %s port\n", argv[0]); exit(1); } // Check usage & args
+
+	//fork here? after receiving input
 
 	// Set up the address struct for this process (the server)
 	memset((char *)&serverAddress, '\0', sizeof(serverAddress)); // Clear out the address struct
@@ -100,8 +121,8 @@ int main(int argc, char *argv[])
 	if (establishedConnectionFD < 0) error("ERROR on accept");
 
 	// Get the message from the client and display it
-	memset(buffer, '\0', 2048);
-	charsRead = recv(establishedConnectionFD, buffer, 2048, 0); // Read the client's message from the socket
+	memset(buffer, '\0', 500000);
+	charsRead = recv(establishedConnectionFD, buffer, 500000, 0); // Read the client's message from the socket
 	if (charsRead < 0) error("ERROR reading from socket");
 	//printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
@@ -109,7 +130,7 @@ int main(int argc, char *argv[])
 	encryptMessage(key, text, &msg);
 
 	// Send a Success message back to the client
-	charsRead = send(establishedConnectionFD, buffer, strlen(buffer), 0); // Send encrypted message back to client
+	charsRead = send(establishedConnectionFD, msg, strlen(msg), 0); // Send encrypted message back to client
 	if (charsRead < 0) error("ERROR writing to socket");
 	close(establishedConnectionFD); // Close the existing socket which is connected to the client
 	close(listenSocketFD); // Close the listening socket

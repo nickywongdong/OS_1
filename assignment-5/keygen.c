@@ -10,12 +10,12 @@ int main(int argc, char *argv[]){
    int length=atoi(argv[1]), i, rand;	//init all variables
    char randomLetter;
    char *string = malloc(sizeof(char)*length+1);
-   memset(string, '\0', length);
+   //sets to all newlines so last char is a newline
+   memset(string, '\n', length+1);
 
    srand(time(NULL));
 
    for(i=0; i<length; i++)  string[i]="ABCDEFGHIJKLMNOPQRSTUVWXYZ "[random () % 27];      //random char from string
-   string[length]='\n';		//add newline last
    printf("%s", string);   //goes to stdout
 
    return 0;

@@ -10,7 +10,7 @@
 void error(const char *msg) { perror(msg); exit(0); } // Error function used for reporting issues
 
 int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//checks the length of key generated
-	char keyString[2048], textString[2048], ch;
+	char ch;
 	int i=0, j=0, bufferLength;
 	//get wc of both files
  	while (1) {
@@ -27,7 +27,7 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
     bufferLength=i+j+2;	//+2 for extra newline characters
 
     //if they lengths do not equal, exit
-	if(i!=j){
+	if(i<j){
 		printf("Keygen length: %d, Plaintext length: %d, lengths must match!!\n", i, j);
 		fclose(key);
     	fclose(plaintext);
@@ -55,6 +55,7 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
 		textTemp[j]=ch;
 		j++;
 	}
+
 	//copy temp into actual pointers from main
 	sprintf(*myKey, keyTemp);
 	sprintf(*myText, textTemp);
@@ -94,18 +95,19 @@ int main(int argc, char *argv[])
 		error("CLIENT: ERROR connecting");
 
 
-
 	// Sending data to server (or otp_end_d.c in this case)
 	char *keyFile = argv[2];
 	char *textFile = argv[1];		//setting filenames
-	char *myKey, *myText, *buffer;
+	char *myKey, *myText;
+	//*buffer;
+	char buffer[500000];
 	//open plaintext & key
 	FILE *key = fopen(keyFile, "r");
 	FILE *plaintext = fopen(textFile, "r");
 	if(key==NULL || plaintext == NULL)	printf("error in opening file...\n");
 	//parse files
 	int bufferLength = readFiles(key, plaintext, &myKey, &myText);
-	buffer = malloc(sizeof(char)*bufferLength);
+	//buffer = malloc(sizeof(char)*bufferLength);
 	snprintf(buffer, bufferLength, "%s%s", myKey, myText);		//concatenate key and text to buffer
 
 	// Send message to server
@@ -114,8 +116,16 @@ int main(int argc, char *argv[])
 	if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
 
 	// Get return message from server
-	memset(buffer, '\0', bufferLength); // Clear out the buffer again for reuse
-	charsRead = recv(socketFD, buffer, bufferLength - 1, 0); // Read data from the socket, leaving \0 at end
+	//printf("sizeof buffer: %d\n", sizeof(buffer));
+	//printf("buffer (should not be empty): %s\n", buffer);
+	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
+	//printf("size of buffer: %d\n", sizeof(buffer));
+	//charsRead = recv(socketFD, buffer, 0, 0); // Read data from the socket, leaving \0 at end
+	//testing
+	//printf("buffer (should be empty): %s\n", buffer);
+	//printf("buffer length: %d\n", bufferLength);
+	//printf("the length of myText: %d\n", strlen(myText));
+	charsRead = recv(socketFD, buffer, sizeof(buffer)-1, 0);
 	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
 
 	printf("%s\n", buffer);
