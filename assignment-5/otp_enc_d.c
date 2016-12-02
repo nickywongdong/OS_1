@@ -49,13 +49,13 @@ void encryptMessage(char *key, char *text, char **msg){
 	//store text as its integer value (from alpha array) into temp1
 	for(i=0; i<strlen(text); i++){
 		for(j=0; j<27; j++){
-			if(text[i]==alpha[j])	temp1[i]=j*5;	//arbitrary for hash
+			if(text[i]==alpha[j])	temp1[i]=j;
 		}
 	}
 	//store key as its integer value (from alpha array) into temp2
 	for(i=0; i<strlen(key); i++){
 		for(j=0; j<27; j++){
-			if(key[i]==alpha[j])	temp2[i]=j*5;
+			if(key[i]==alpha[j])	temp2[i]=j;
 		}
 	}
 
