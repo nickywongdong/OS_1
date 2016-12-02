@@ -28,7 +28,7 @@ int readFiles(FILE *key, FILE *plaintext, char **myKey, char **myText){			//chec
 
     //if they lengths do not equal, exit
 	if(i<j){
-		printf("Keygen length: %d, Plaintext length: %d, lengths must match!!\n", i, j);
+		printf("Keygen length: %d, Plaintext length: %d, key too short\n", i, j);
 		fclose(key);
     	fclose(plaintext);
 		exit(1);
@@ -116,17 +116,14 @@ int main(int argc, char *argv[])
 	if (charsWritten < strlen(buffer)) printf("CLIENT: WARNING: Not all data written to socket!\n");
 
 	// Get return message from server
-	//printf("sizeof buffer: %d\n", sizeof(buffer));
-	//printf("buffer (should not be empty): %s\n", buffer);
 	memset(buffer, '\0', sizeof(buffer)); // Clear out the buffer again for reuse
-	//printf("size of buffer: %d\n", sizeof(buffer));
-	//charsRead = recv(socketFD, buffer, 0, 0); // Read data from the socket, leaving \0 at end
 	//testing
-	//printf("buffer (should be empty): %s\n", buffer);
-	//printf("buffer length: %d\n", bufferLength);
-	//printf("the length of myText: %d\n", strlen(myText));
+
+	//fflush(stdout);
+	charsRead = recv(socketFD, buffer, sizeof(buffer), 0);
 	fflush(stdout);
-	charsRead = recv(socketFD, buffer, sizeof(buffer)-1, 0);
+	printf("");
+
 	if (charsRead < 0) error("CLIENT: ERROR reading from socket");
 
 	fprintf(stdout, "%s\n", buffer);
