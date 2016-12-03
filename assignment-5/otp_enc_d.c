@@ -128,17 +128,25 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	//this is the parent, go back to accepting connections
-	else if (spawnpid>0);//{
+	else if (spawnpid>0){
+		sleep(1);
 		//close(establishedConnectionFD); // Close the existing socket which is connected to the client
 		//close(listenSocketFD); // Close the listening socket
-	//}
+	}
 		//close(establishedConnectionFD);
 		//continue;
 
 	//this is the child
 	else if(spawnpid==0){
 
+	//verify name
+	memset(buffer, '\0', 500000);
+	charsRead=recv(establishedConnectionFD, buffer, 500000-1, 0);
 
+	if(atoi(buffer)!=1){
+		printf("Error, this server is for encryption only\n");
+		exit(EXIT_FAILURE);
+	}
 
 	// Get the message from the client and display it
 	memset(buffer, '\0', 500000);

@@ -111,6 +111,14 @@ int main(int argc, char *argv[])
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
+	//create name to send to server for verification
+	char name[]="2";
+	charsWritten=send(socketFD, name, strlen(name), 0);
+	if(charsWritten<strlen(name)){
+		printf("Warning, not completely written to server\n");
+	}
+
+
 	// Send message to server
 	charsWritten = send(socketFD, buffer, strlen(buffer), 0); // Write to the server
 	if (charsWritten < 0) error("CLIENT: ERROR writing to socket");

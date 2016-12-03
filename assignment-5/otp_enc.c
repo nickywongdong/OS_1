@@ -94,13 +94,22 @@ int main(int argc, char *argv[])
 	if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0) // Connect socket to address
 		error("CLIENT: ERROR connecting");
 
-
 	// Sending data to server (or otp_end_d.c in this case)
 	char *keyFile = argv[2];
 	char *textFile = argv[1];		//setting filenames
 	char *myKey, *myText;
 	//*buffer;
 	char buffer[500000];
+
+
+	//send in the name (encryption) for verification
+	char name[]="1";
+	charsWritten=send(socketFD, name, strlen(name), 0);
+	if(charsWritten<strlen(name)){
+		printf("Warning, not completely written to server\n");
+	}
+
+
 	//open plaintext & key
 	FILE *key = fopen(keyFile, "r");
 	FILE *plaintext = fopen(textFile, "r");

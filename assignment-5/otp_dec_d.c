@@ -129,7 +129,13 @@ int main(int argc, char *argv[])
       //this is the child
       else if(spawnpid==0){
 
-
+         //verify the name
+         memset(buffer, '\0', 500000);
+         charsRead = recv(establishedConnectionFD, buffer, 500000, 0);
+         if(atoi(buffer)!=2){
+            printf("Error, this server is for decryption only\n");
+            exit(EXIT_FAILURE);
+         }
 
 	 // Get the message from the client and display it
 	 memset(buffer, '\0', 500000);
