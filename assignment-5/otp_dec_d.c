@@ -59,8 +59,8 @@ void decryptMessage(char *key, char *text, char **msg){
    //take modulus 27 of each element (a little extra for the negatives)
    for(i=0; i<strlen(text); i++){
       if(temp3[i]<0){
-         c=abs(temp3[i]);
-         temp3[i] = 27 - c;
+	 c=abs(temp3[i]);
+	 temp3[i] = 27 - c;
       }
       else  temp3[i]=temp3[i]%27;
    }
@@ -129,14 +129,14 @@ int main(int argc, char *argv[])
       //this is the child
       else if(spawnpid==0){
 
-         //verify the name
-         memset(buffer, '\0', 500000);
-         charsRead = recv(establishedConnectionFD, buffer, 500000, 0);
-         if(atoi(buffer)!=2){
-            printf("Error, this server is for decryption only\n");
-            exit(EXIT_FAILURE);
-         }
-         sleep(1);
+	 //verify the name
+	 memset(buffer, '\0', 500000);
+	 charsRead = recv(establishedConnectionFD, buffer, 500000, 0);
+	 if(atoi(buffer)!=2){
+	    printf("Error, this server is for decryption only\n");
+	    exit(EXIT_FAILURE);
+	 }
+	 sleep(1);
 
 	 // Get the message from the client and display it
 	 memset(buffer, '\0', 500000);
