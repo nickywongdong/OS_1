@@ -147,6 +147,7 @@ int main(int argc, char *argv[])
 		printf("Error, this server is for encryption only\n");
 		exit(EXIT_FAILURE);
 	}
+	sleep(1);
 
 	// Get the message from the client and display it
 	memset(buffer, '\0', 500000);

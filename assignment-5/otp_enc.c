@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 	if(charsWritten<strlen(name)){
 		printf("Warning, not completely written to server\n");
 	}
-
+	sleep(1);
 
 	//open plaintext & key
 	FILE *key = fopen(keyFile, "r");

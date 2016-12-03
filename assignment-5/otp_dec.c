@@ -117,6 +117,7 @@ int main(int argc, char *argv[])
 	if(charsWritten<strlen(name)){
 		printf("Warning, not completely written to server\n");
 	}
+	sleep(1);
 
 
 	// Send message to server
